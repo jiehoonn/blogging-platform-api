@@ -15,6 +15,8 @@
 // 500 Internal Server Error: A generic error message indicating an unexpected condition that prevented the server from fulfilling the request.
 // 503 Service Unavailable: The server is temporarily unable to handle the request, often due to maintenance or being overloaded. The response may include a Retry-After header to suggest when the client can try again.
 
+require('dotenv').config();
+
 // Server Set up
 const express = require('express');
 const app = express();
@@ -30,10 +32,10 @@ app.use(express.json());
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'your_password',
-  database: 'blogging_platform'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
 
 // ===================================================
@@ -46,8 +48,33 @@ app.get('/', (req, res) => {
 });
 
 // Create a Blog Post
-app.post('/api/posts', (req, res) => {
-  
+app.post('/api/posts', async (req, res) => {
+  // Obtain values from request body.
+  const { title, content, category, tags } = req.body;
+  // Skeleton POST query
+  const query = 'INSERT INTO posts (title, content, category, tags) VALUES (?, ?, ?, ?)';
+
+  // Validate if query contains all required values
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required.' });
+  }
+
+  const values = [title, content, category, JSON.stringify(tags)];
+
+  try {
+    const [result] = await pool.query(query, values);
+    console.log('1 record inserted successfully.');
+    res.status(201).json({
+      id: result.insertId,
+      title,
+      content,
+      category,
+      tags
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error inserting data into database.' });
+  }
 });
 
 // Update a Blog Post
