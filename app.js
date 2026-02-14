@@ -78,8 +78,43 @@ app.post('/api/posts', async (req, res) => {
 });
 
 // Update a Blog Post
-app.put('/api/posts/:id', (req, res) => {
-  
+app.put('/api/posts/:id', async (req, res) => {
+  // Parse the Post ID of the post the user is updating.
+  const postId = parseInt(req.params.id);
+  // Updated or existing content of the post.
+  const { title, content, category, tags } = req.body;
+
+  // Validate if query contains all required values
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required.' });
+  }
+
+  // UPDATE SQL query.
+  const query = 'UPDATE posts SET title = ?, content = ?, category = ?, tags = ? WHERE id = ?'
+
+  const values = [title, content, category, JSON.stringify(tags), postId]
+
+  try {
+    const [result] = await pool.query(query, values);
+
+    if (result.affectedRows == 0) {
+      console.log('ID of post requested to update not found.');
+      return res.status(404).json({ error: 'ID of post requested to update not found.'});
+    } else {
+      console.log('Post found! Updating...');
+      return res.status(200).json({
+        id: postId,
+        title,
+        content,
+        category,
+        tags
+      });
+    };
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error updating post data in database.' });
+  }
 });
 
 // Delete a Blog Post
