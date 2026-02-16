@@ -141,13 +141,58 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 // Get a Blog Post
-app.get('/api/posts/:id', (req, res) => {
+app.get('/api/posts/:id', async (req, res) => {
+  const postId = req.params.id;
+  const query = 'SELECT * FROM posts WHERE id = ?';
+
+  try {
+    const [result] = await pool.query(query, [postId]);
+    if (result.length > 0) {
+      console.log('Found post.');
+      return res.status(200).json(
+        result[0]
+      );
+    } else {
+      console.log('No posts with id found.');
+      return res.status(404).json({ error: 'No posts with id found. '})
+    };
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching post data in database.' });
+  };
   
 });
 
 // Get All Blog Post
-app.put('/api/posts', (req, res) => {
-  
+app.get('/api/posts', async (req, res) => {
+  const filter = req.query.term
+  let query;
+  let values;
+
+  if (filter) {
+    query = 'SELECT * FROM posts WHERE title LIKE ? OR content LIKE ? OR category LIKE ?';
+    const searchTerm = `%${filter}%`;
+    values = [searchTerm, searchTerm, searchTerm];
+  } else {
+    query = 'SELECT * FROM posts';
+    values = [];
+  };
+
+  try {
+    const [result] = await pool.query(query, values);
+    if (result.length > 0) {
+      console.log('Found posts.');
+      return res.status(200).json(
+        result
+      );
+    } else {
+      console.log('No posts found.');
+      return res.status(404).json({ error: 'No posts found.' });
+    };
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error fetching post data in database.' });
+  };
 });
 
 app.listen(port, () => {
