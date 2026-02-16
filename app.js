@@ -90,16 +90,16 @@ app.put('/api/posts/:id', async (req, res) => {
   }
 
   // UPDATE SQL query.
-  const query = 'UPDATE posts SET title = ?, content = ?, category = ?, tags = ? WHERE id = ?'
+  const query = 'UPDATE posts SET title = ?, content = ?, category = ?, tags = ? WHERE id = ?';
 
-  const values = [title, content, category, JSON.stringify(tags), postId]
+  const values = [title, content, category, JSON.stringify(tags), postId];
 
   try {
     const [result] = await pool.query(query, values);
 
     if (result.affectedRows == 0) {
       console.log('ID of post requested to update not found.');
-      return res.status(404).json({ error: 'ID of post requested to update not found.'});
+      return res.status(404).json({ error: 'ID of post requested to update not found.' });
     } else {
       console.log('Post found! Updating...');
       return res.status(200).json({
@@ -114,11 +114,29 @@ app.put('/api/posts/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error updating post data in database.' });
-  }
+  };
 });
 
 // Delete a Blog Post
-app.delete('/api/posts/:id', (req, res) => {
+app.delete('/api/posts/:id', async (req, res) => {
+  const postId = parseInt(req.params.id);
+
+  const query = 'DELETE FROM posts WHERE id = ?';
+
+  try {
+    const [result] = await pool.query(query, [postId]);
+
+    if (result.affectedRows == 1) {
+      console.log('Post deleted.');
+      return res.status(204).end();
+    } else {
+      console.log('ID of post not found.');
+      return res.status(404).json({ error: 'Post ID not found.' });
+    };
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error deleting post data in database.' });
+  };
   
 });
 
